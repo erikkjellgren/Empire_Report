@@ -1,24 +1,26 @@
 import glob
+import json
 import time
 
 import numpy as np
 
-from get_gamestate import get_gamestate
 
-
-def get_pops(save_name, print_timing=True):
+def get_happiness(stratum, save_name):
     """Docstring
     """
-    saves = glob.glob(f"savefiles/{save_name}/*.data")
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.pop.json"))
 
-    pops = np.zeros(len(saves))
+    happiness = np.zeros((3, len(saves)))
+    happiness[1, :] = 100
+    counter = np.zeros(len(saves))
     time_array = np.zeros((3, len(saves)))
-    if print_timing:
-        start_time = time.time()
-        print(f"Starting pops".ljust(39), end=" ")
+
+    start_time = time.time()
+    print(f"Starting happiness {stratum}".ljust(39), end=" ", flush=True)
     for i, save in enumerate(saves):
 
-        gamestate = get_gamestate(save)
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
 
         year = float(gamestate["date"].split(".")[0])
         month = float(gamestate["date"].split(".")[1])
@@ -27,10 +29,147 @@ def get_pops(save_name, print_timing=True):
         time_array[1, i] = time_array[0, i] / 30
         time_array[2, i] = time_array[1, i] / 12
 
-        if isinstance(gamestate["country"]["0"]["employable_pops"], str):
-            pops[i] += float(gamestate["country"]["0"]["employable_pops"])
-            if i == 2:
-                pops[0] = pops[1]
+        for pop in gamestate["pop"].keys():
+            if gamestate["pop"][pop]["category"] == stratum:
+                if "happiness" not in gamestate["pop"][pop]:
+                    continue
+                happiness[0, i] += float(gamestate["pop"][pop]["happiness"])
+                happiness[1, i] = min(happiness[1, i], float(gamestate["pop"][pop]["happiness"]))
+                happiness[2, i] = max(happiness[2, i], float(gamestate["pop"][pop]["happiness"]))
+                counter[i] += 1
+    happiness[0, :] = happiness[0, :] / counter
+
+    current_time = time.time()
+    print(f" --- Finished happiness {stratum} in ".ljust(47) + f"{current_time - start_time:5.2f} sec")
+    return time_array, happiness
+
+
+def get_political_power(stratum, save_name):
+    """Docstring
+    """
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.pop.json"))
+
+    political_power = np.zeros(len(saves))
+    time_array = np.zeros((3, len(saves)))
+
+    start_time = time.time()
+    print(f"Starting political power {stratum}".ljust(39), end=" ", flush=True)
+    for i, save in enumerate(saves):
+
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
+
+        year = float(gamestate["date"].split(".")[0])
+        month = float(gamestate["date"].split(".")[1])
+        day = float(gamestate["date"].split(".")[2])
+        time_array[0, i] = day + month * 30 + year * 12 * 30
+        time_array[1, i] = time_array[0, i] / 30
+        time_array[2, i] = time_array[1, i] / 12
+
+        for pop in gamestate["pop"].keys():
+            if gamestate["pop"][pop]["category"] == stratum:
+                if "power" not in gamestate["pop"][pop]:
+                    continue
+                political_power[i] += float(gamestate["pop"][pop]["power"])
+    current_time = time.time()
+    print(f" --- Finished political power {stratum} in ".ljust(47) + f"{current_time - start_time:5.2f} sec")
+    return time_array, political_power
+
+
+def get_unemployment(save_name):
+    """Docstring
+    """
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.pop.json"))
+
+    unemployment = np.zeros(len(saves))
+    time_array = np.zeros((3, len(saves)))
+
+    start_time = time.time()
+    print(f"Starting unemployment".ljust(39), end=" ", flush=True)
+    for i, save in enumerate(saves):
+
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
+
+        year = float(gamestate["date"].split(".")[0])
+        month = float(gamestate["date"].split(".")[1])
+        day = float(gamestate["date"].split(".")[2])
+        time_array[0, i] = day + month * 30 + year * 12 * 30
+        time_array[1, i] = time_array[0, i] / 30
+        time_array[2, i] = time_array[1, i] / 12
+
+        if i == 0:
+            continue
+        for pop in gamestate["pop"].keys():
+            if "job" not in gamestate["pop"][pop].keys():
+                unemployment[i] += 1
+        if i == 2:
+            unemployment[0] = unemployment[1]
+    current_time = time.time()
+    print(f" --- Finished unemployment in ".ljust(47) + f"{current_time - start_time:5.2f} sec")
+    return time_array, unemployment
+
+
+def get_homeless(save_name):
+    """Docstring
+    """
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.planets.json"))
+
+    homeless = np.zeros(len(saves))
+    time_array = np.zeros((3, len(saves)))
+
+    start_time = time.time()
+    print(f"Starting homeless".ljust(39), end=" ", flush=True)
+    for i, save in enumerate(saves):
+
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
+
+        year = float(gamestate["date"].split(".")[0])
+        month = float(gamestate["date"].split(".")[1])
+        day = float(gamestate["date"].split(".")[2])
+        time_array[0, i] = day + month * 30 + year * 12 * 30
+        time_array[1, i] = time_array[0, i] / 30
+        time_array[2, i] = time_array[1, i] / 12
+
+        if i == 0:
+            continue
+        for planet in gamestate["planets"]["planet"].keys():
+            homeless[i] -= min(0, float(gamestate["planets"]["planet"][planet]["free_housing"]))
+        if i == 2:
+            homeless[0] = homeless[1]
+    current_time = time.time()
+    print(f" --- Finished homeless in ".ljust(47) + f"{current_time - start_time:5.2f} sec")
+    return time_array, homeless
+
+
+def get_pops(save_name, print_timing=True):
+    """Docstring
+    """
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
+
+    pops = np.zeros(len(saves))
+    time_array = np.zeros((3, len(saves)))
+    if print_timing:
+        start_time = time.time()
+        print(f"Starting pops".ljust(39), end=" ", flush=True)
+    for i, save in enumerate(saves):
+
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
+
+        year = float(gamestate["date"].split(".")[0])
+        month = float(gamestate["date"].split(".")[1])
+        day = float(gamestate["date"].split(".")[2])
+        time_array[0, i] = day + month * 30 + year * 12 * 30
+        time_array[1, i] = time_array[0, i] / 30
+        time_array[2, i] = time_array[1, i] / 12
+
+        if i == 0:
+            continue
+        pops[i] += float(gamestate["country"]["0"]["employable_pops"])
+        if i == 2:
+            pops[0] = pops[1]
 
     if print_timing:
         current_time = time.time()
@@ -41,7 +180,7 @@ def get_pops(save_name, print_timing=True):
 def get_gdp(save_name):
     """Docstring
     """
-    saves = glob.glob(f"savefiles/{save_name}/*.data")
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
 
     gdp = np.zeros(len(saves))
     start_time = time.time()
@@ -81,7 +220,7 @@ def get_gdp(save_name):
 def get_resource_stats(resource, save_name, print_timing=True):
     """Docstring
     """
-    saves = glob.glob(f"savefiles/{save_name}/*.data")
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
 
     stats = np.zeros((2, len(saves)))
     time_array = np.zeros((3, len(saves)))
@@ -90,7 +229,8 @@ def get_resource_stats(resource, save_name, print_timing=True):
         print(f"Starting {resource}".ljust(39), end=" ", flush=True)
     for i, save in enumerate(saves):
 
-        gamestate = get_gamestate(save)
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
 
         year = float(gamestate["date"].split(".")[0])
         month = float(gamestate["date"].split(".")[1])
@@ -119,7 +259,7 @@ def get_resource_stats(resource, save_name, print_timing=True):
 def get_resource_stats_detailed(resource, save_name):
     """Docstring
     """
-    saves = glob.glob(f"savefiles/{save_name}/*.data")
+    saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
 
     time_array = np.zeros((3, len(saves)))
     megastructures = np.zeros((2, len(saves)))
@@ -137,7 +277,8 @@ def get_resource_stats_detailed(resource, save_name):
     print(f"Starting detailed {resource}".ljust(40), end=" ", flush=True)
     for i, save in enumerate(saves):
 
-        gamestate = get_gamestate(save)
+        with open(f"{save}") as handle:
+            gamestate = json.loads(handle.read())
 
         year = float(gamestate["date"].split(".")[0])
         month = float(gamestate["date"].split(".")[1])

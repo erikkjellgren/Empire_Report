@@ -1,8 +1,18 @@
+import json
 import os
 
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 
-from analyse_stats import get_gdp, get_pops, get_resource_stats, get_resource_stats_detailed
+from analyse_stats import (
+    get_gdp,
+    get_happiness,
+    get_homeless,
+    get_political_power,
+    get_pops,
+    get_resource_stats,
+    get_resource_stats_detailed,
+    get_unemployment,
+)
 
 
 def write_report(save_name):
@@ -317,7 +327,99 @@ def write_report(save_name):
         plt.savefig(f"report/{resource}.png")
         plt.close()
     resource_file.close()
+
+    index_file.write(".. toctree::\n")
+    index_file.write("   :maxdepth: 2\n")
+    index_file.write("   :caption: Domestic\n\n")
+    index_file.write(f"   domestic.rst\n")
+    domestic_file = open(f"report/domestic.rst", "w")
+
+    # Social Issues
+    sizex = 8
+    sizey = 4
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(sizex, sizey))
+    time_array, homeless = get_homeless(save_name)
+    time_array, unemployment = get_unemployment(save_name)
+    time_array, pops = get_pops(save_name)
+    domestic_file.write(f"Social Issues\n")
+    domestic_file.write(f"{'='*len('Social Issues')}\n\n")
+    domestic_file.write(f".. image:: homeless.png\n")
+    domestic_file.write(f"   :width: 960\n\n")
+    ax1.plot(time_array[2, :], homeless, label="Homeless")
+    ax1.plot(time_array[2, :], unemployment, label="Unemployed")
+    ax2.plot(time_array[2, :], homeless / pops, label="Homeless")
+    ax2.plot(time_array[2, :], unemployment / pops, label="Unemployed")
+    ax1.set_xlabel("Year")
+    ax1.set_ylabel("Problematic Population")
+    ax2.set_xlabel("Year")
+    ax2.set_ylabel("Problematic Population %")
+    ax1.legend(frameon=False)
+    plt.tight_layout()
+    plt.savefig(f"report/homeless.png")
+    plt.close()
+
+    # Political Power by stratum
+    domestic_file.write(f"Political Power\n")
+    domestic_file.write(f"{'='*len('Political Power')}\n\n")
+    domestic_file.write(f".. image:: politicalpower.png\n")
+    domestic_file.write(f"   :width: 960\n\n")
+
+    time_array, ruler = get_political_power("ruler", save_name)
+    time_array, specialist = get_political_power("specialist", save_name)
+    time_array, worker = get_political_power("worker", save_name)
+    time_array, slave = get_political_power("slave", save_name)
+
+    sizex = 8
+    sizey = 4
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(sizex, sizey))
+    total_power = ruler + specialist + worker + slave
+    total_power[total_power == 0] = 0.01
+    ax1.stackplot(
+        time_array[2, :], ruler, specialist, worker, slave, labels=["Ruler", "Specialist", "Worker", "Slave"]
+    )
+    ax2.stackplot(
+        time_array[2, :],
+        ruler / total_power,
+        specialist / total_power,
+        worker / total_power,
+        slave / total_power,
+    )
+    ax1.set_xlabel("Year")
+    ax1.set_ylabel("Political Power")
+    ax2.set_xlabel("Year")
+    ax2.set_ylabel("Political Power %")
+    ax1.legend(frameon=False, loc=2)
+    ax2.set_ylim(0, 1)
+    ax2.set_xlim(time_array[2, 0], time_array[2, -1])
+    plt.tight_layout()
+    plt.savefig(f"report/politicalpower.png")
+    plt.close()
+
+    # Happiness
+    sizex = 8
+    sizey = 4
+    domestic_file.write(f"Social Issues\n")
+    domestic_file.write(f"{'='*len('Social Issues')}\n\n")
+    domestic_file.write(f".. image:: homeless.png\n")
+    domestic_file.write(f"   :width: 480\n\n")
+    strata = ["ruler", "specialist", "worker", "slave"]
+    for stratum in strata:
+        _, ax1 = plt.subplots(1, 1, figsize=(sizex, sizey))
+        time_array, hapiness = get_happiness(stratum, save_name)
+        ax1.plot(time_array[2, :], hapiness[0, :], label="Happiness Mean")
+        ax1.plot(time_array[2, :], hapiness[1, :], label="Happiness Min")
+        ax1.plot(time_array[2, :], hapiness[2, :], label="Happiness Max")
+        ax1.set_ylim(0, 1)
+        ax1.set_xlabel("Year")
+        ax1.set_ylabel(f"{stratum} happiness")
+        ax1.legend(frameon=False)
+        plt.tight_layout()
+        plt.savefig(f"report/{stratum}_happiness.png")
+        plt.close()
+    domestic_file.close()
     index_file.close()
 
 
-write_report("thrashiantechnocrat7_-1184343043")
+with open("settings.json") as handle:
+    SETTINGS = json.loads(handle.read())
+write_report(SETTINGS["save_folder_name"])

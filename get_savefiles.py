@@ -1,26 +1,31 @@
+import glob
+import json
 import os
 import shutil
 import time
 
 
-def get_savefiles(save_name):
+def get_savefiles(save_games_location):
     """Docstring
     """
     if not os.path.exists("savefiles"):
         os.makedirs("savefiles")
-    last_modified = 0.0
-
+    last_modified = {}
+    runs = glob.glob(f"{save_games_location}/save games/*")
+    for run in runs:
+        if not os.path.exists(f"savefiles/{run.split('/')[-1]}"):
+            os.makedirs(f"savefiles/{run.split('/')[-1]}")
+        last_modified[run] = 0.0
     while True:
-        modified = os.path.getmtime(
-            f"/mnt/c/Users/kjellgren/Documents/Paradox Interactive/Stellaris/save games/{save_name}/ironman.sav"
-        )
-        if modified != last_modified:
-            shutil.copy2(
-                f"/mnt/c/Users/kjellgren/Documents/Paradox Interactive/Stellaris/save games/{save_name}/ironman.sav",
-                f"/mnt/c/Users/kjellgren/Documents/gitreps/Stellaris_Stats/savefiles/{save_name}/{modified}.sav",
-            )
-            last_modified = modified
-        time.sleep(10)
+        for folder in last_modified:
+            modified = os.path.getmtime(f"{folder}")
+            if modified != last_modified:
+                last_modified[folder] = modified
+                save_file = glob.glob(f"{folder}/*.sav")
+                shutil.copy2(save_file[0], f"savefiles/{folder.split('/')[-1]}/{modified}.sav")
+        time.sleep(5)
 
 
-get_savefiles("thrashiantechnocrat7_-1184343043")
+with open("settings.json") as handle:
+    SETTINGS = json.loads(handle.read())
+get_savefiles(SETTINGS["save_games_location"])
