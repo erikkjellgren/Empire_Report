@@ -4,3 +4,4 @@ savefiles/
 report/*.rst
 report/*.png
 local_report/
+savefiles_tracker.json

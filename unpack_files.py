@@ -170,6 +170,7 @@ def save_unpacked_files(save_name):
         sys.stdout.flush()
 
 
-with open("settings.json") as handle:
-    SETTINGS = json.loads(handle.read())
-save_unpacked_files(SETTINGS["save_folder_name"])
+if __name__ == "__main__":
+    with open("settings.json") as handle:
+        SETTINGS = json.loads(handle.read())
+    save_unpacked_files(SETTINGS["save_folder_name"])
