@@ -1,11 +1,12 @@
 import glob
 import json
 import time
+from typing import Tuple
 
 import numpy as np
 
 
-def get_happiness(stratum, save_name):
+def get_happiness(stratum: str, save_name: str) -> Tuple[np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.pop.json"))
@@ -31,6 +32,7 @@ def get_happiness(stratum, save_name):
 
         for pop in gamestate["pop"].keys():
             if gamestate["pop"][pop]["category"] == stratum:
+                # Sometimes pops do not have a happiness state.
                 if "happiness" not in gamestate["pop"][pop]:
                     continue
                 happiness[0, i] += float(gamestate["pop"][pop]["happiness"])
@@ -44,7 +46,7 @@ def get_happiness(stratum, save_name):
     return time_array, happiness
 
 
-def get_political_power(stratum, save_name):
+def get_political_power(stratum: str, save_name: str) -> Tuple[np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.pop.json"))
@@ -76,7 +78,7 @@ def get_political_power(stratum, save_name):
     return time_array, political_power
 
 
-def get_unemployment(save_name):
+def get_unemployment(save_name: str) -> Tuple[np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.pop.json"))
@@ -110,7 +112,7 @@ def get_unemployment(save_name):
     return time_array, unemployment
 
 
-def get_homeless(save_name):
+def get_homeless(save_name: str) -> Tuple[np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.planets.json"))
@@ -143,7 +145,7 @@ def get_homeless(save_name):
     return time_array, homeless
 
 
-def get_pops(save_name, print_timing=True):
+def get_pops(save_name: str, print_timing: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
@@ -177,7 +179,7 @@ def get_pops(save_name, print_timing=True):
     return time_array, pops
 
 
-def get_gdp(save_name):
+def get_gdp(save_name: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
@@ -217,7 +219,9 @@ def get_gdp(save_name):
     return time_array, gdp, gdp / pops
 
 
-def get_resource_stats(resource, save_name, print_timing=True):
+def get_resource_stats(
+    resource: str, save_name: str, print_timing: bool = True
+) -> Tuple[np.ndarray, np.ndarray]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))
@@ -256,7 +260,21 @@ def get_resource_stats(resource, save_name, print_timing=True):
     return time_array, stats
 
 
-def get_resource_stats_detailed(resource, save_name):
+def get_resource_stats_detailed(
+    resource: str, save_name: str
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
     """Docstring
     """
     saves = sorted(glob.glob(f"savefiles/{save_name}/*.country.json"))

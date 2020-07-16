@@ -7,13 +7,14 @@ import time
 from unpack_files import unpack_gamestate
 
 
-def get_savefiles(save_games_location, unpack_on_the_fly):
+def get_savefiles(save_games_location: str, unpack_on_the_fly: bool) -> None:
     """Docstring
     """
     if not os.path.exists("savefiles"):
         os.makedirs("savefiles")
     last_modified = {}
     runs = glob.glob(f"{save_games_location}/save games/*")
+    number_saves = len(runs)
     for run in runs:
         if not os.path.exists(f"savefiles/{run.split('/')[-1]}"):
             os.makedirs(f"savefiles/{run.split('/')[-1]}")
@@ -23,15 +24,22 @@ def get_savefiles(save_games_location, unpack_on_the_fly):
             tracker = json.loads(jsonhandle.read())
         for folder in tracker:
             last_modified[folder] = tracker[folder]
-        del tracker
     except FileNotFoundError:
         print("Creating savefiles_tracker.json")
     while True:
+        runs = glob.glob(f"{save_games_location}/save games/*")
+        if number_saves != len(runs):
+            for run in runs:
+                if run not in last_modified:
+                    if not os.path.exists(f"savefiles/{run.split('/')[-1]}"):
+                        os.makedirs(f"savefiles/{run.split('/')[-1]}")
+                    last_modified[run] = 0.0
+            number_saves = len(runs)
         for folder in last_modified:
-            modified = round(os.path.getmtime(f"{folder}"), 0)
+            save_file = glob.glob(f"{folder}/*.sav")
+            modified = round(os.path.getmtime(f"{save_file[0]}"), 0)
             if modified != last_modified[folder]:
                 last_modified[folder] = modified
-                save_file = glob.glob(f"{folder}/*.sav")
                 shutil.copy2(save_file[0], f"savefiles/{folder.split('/')[-1]}/{modified}.sav")
                 with open("savefiles_tracker.json", "w") as outfile:
                     json.dump(last_modified, outfile, indent=2)

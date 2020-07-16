@@ -26,6 +26,6 @@ repos:
         args:
         - --max-line-length=130
         - --ignore-imports=yes
-        - --disable=C0114,E0401,R0912,R0914,R1702,R0915,R0801
+        - --disable=C0114,E0401,R0912,R0914,R1702,R0915,R0801,C0330
         - --good-names=i,j
         - --ignore-patterns=conf.py

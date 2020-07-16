@@ -5,17 +5,18 @@ import sys
 import time
 import zipfile
 from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List
 
 from mpi4py import MPI
 
 
-def input_tree():
+def input_tree() -> DefaultDict[str, Any]:
     """Docstring
     """
     return defaultdict(input_tree)
 
 
-def gamestate_to_dict(lines):
+def gamestate_to_dict(lines: List[str]) -> Dict[str, Any]:
     """Docstring
     """
     keys = []
@@ -92,7 +93,7 @@ def gamestate_to_dict(lines):
     return dict(gamestate)
 
 
-def unpack_gamestate(save_name, save_file):
+def unpack_gamestate(save_name: str, save_file: str) -> None:
     """Docstring
     """
     archive = zipfile.ZipFile(f"{save_file}", "r")
@@ -126,7 +127,7 @@ def unpack_gamestate(save_name, save_file):
 
     pops_dict = {"pop": copy.deepcopy(gamestate["pop"])}
     pops_dict["date"] = gamestate["date"]
-    controlled_pops = []
+    controlled_pops: List[str] = []
     for key in planets_dict["planets"]["planet"]:
         # When colonizing the number of pops is zero.
         if len(list(planets_dict["planets"]["planet"][key]["pop"].keys())) == 0:
@@ -143,7 +144,7 @@ def unpack_gamestate(save_name, save_file):
     del pops_dict
 
 
-def save_unpacked_files(save_name):
+def save_unpacked_files(save_name: str) -> None:
     """Docstring
     """
     comm = MPI.COMM_WORLD

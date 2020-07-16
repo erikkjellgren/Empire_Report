@@ -15,7 +15,7 @@ from analyse_stats import (
 )
 
 
-def write_report(save_name):
+def write_report(save_name: str) -> None:
     """Docstring
     """
     if not os.path.exists("report"):
