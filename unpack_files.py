@@ -110,7 +110,7 @@ def unpack_gamestate(save_name: str, save_file: str) -> None:
     for key in gamestate["country"]["0"]["current_month"]:
         if key not in ["income", "expenses"]:
             del country_dict["country"]["0"]["current_month"][key]
-    with open(f"savefiles/{save_name}/{gamestate['date'].replace('.','')}.country.json", "w") as outfile:
+    with open(f"savefiles/{save_name}/{save_file.split('.')[0]}.country.json", "w") as outfile:
         json.dump(country_dict, outfile, indent=2)
     del country_dict
 
@@ -122,7 +122,7 @@ def unpack_gamestate(save_name: str, save_file: str) -> None:
             del planets_dict["planets"]["planet"][key]
         elif gamestate["planets"]["planet"][key]["total_housing"] == "0":
             del planets_dict["planets"]["planet"][key]
-    with open(f"savefiles/{save_name}/{gamestate['date'].replace('.','')}.planets.json", "w") as outfile:
+    with open(f"savefiles/{save_name}/{save_file.split('.')[0]}.planets.json", "w") as outfile:
         json.dump(planets_dict, outfile, indent=2)
 
     pops_dict = {"pop": copy.deepcopy(gamestate["pop"])}
@@ -138,7 +138,7 @@ def unpack_gamestate(save_name: str, save_file: str) -> None:
     for key in gamestate["pop"]:
         if key not in controlled_pops:
             del pops_dict["pop"][key]
-    with open(f"savefiles/{save_name}/{gamestate['date'].replace('.','')}.pop.json", "w") as outfile:
+    with open(f"savefiles/{save_name}/{save_file.split('.')[0]}.pop.json", "w") as outfile:
         json.dump(pops_dict, outfile, indent=2)
     del planets_dict
     del pops_dict
@@ -158,6 +158,10 @@ def save_unpacked_files(save_name: str) -> None:
     for j, save in enumerate(saves):
         if j % nprocess != rank:
             continue
+        if os.path.isfile(f'{save.split(".")[0]}.country.data'):
+            continue
+        unpack_gamestate(save)
+            
         unpack_gamestate(save_name, save)
 
         if rank != 0:
